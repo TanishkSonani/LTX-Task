@@ -25,6 +25,8 @@ tags
 *.debug
 Makefile*
 *build-*
+/build/
+/build/*
 *.prl
 *.app
 moc_*.cpp
