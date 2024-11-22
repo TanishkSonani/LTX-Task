@@ -27,7 +27,7 @@ Makefile*
 *build-*
 /build/
 /build/*
-build/Desktop_Qt_6_7_0_MinGW_64_bit-Debug/
+/build/Desktop_Qt_6_7_0_MinGW_64_bit-Debug/
 *.prl
 *.app
 moc_*.cpp
