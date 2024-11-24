@@ -7,6 +7,9 @@
 #include <QPushButton>
 #include <Qlabel>
 #include <QtCore>
+#include <QtSql/QSqlDatabase>
+#include <QtSql/QSqlQuery>
+#include <QtSql/QSqlError>
 
 class MainWindow : public QMainWindow
 {
@@ -30,6 +33,7 @@ private:
     QPushButton *SortButton;
     QPushButton *JsonButton;
     QPushButton *DBButton;
-    QLabel      *JsonLabel;
+    QLabel      *StatusLabel;
+    QSqlDatabase DB_Con;
 };
 #endif // MAINWINDOW_H

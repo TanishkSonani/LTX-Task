@@ -122,10 +122,10 @@ MainWindow::MainWindow(QWidget *parent)
     dataView = new QTableView(this);
     mainLayout -> addWidget(dataView);
 
-    JsonLabel = new QLabel(this);
-    JsonLabel->setAlignment(Qt::AlignCenter);
-    JsonLabel->setStyleSheet("font-weight: bold; color: green;");
-    mainLayout->addWidget(JsonLabel);
+    StatusLabel = new QLabel(this);
+    StatusLabel->setAlignment(Qt::AlignCenter);
+    StatusLabel->setStyleSheet("font-weight: bold; color: green;");
+    mainLayout->addWidget(StatusLabel);
 
     setCentralWidget(centralWidget);
 
@@ -169,7 +169,7 @@ MainWindow::~MainWindow() {}
 
 void MainWindow::LoadData()
 {
-    JsonLabel->clear();
+    StatusLabel->clear();
     QStandardItemModel *model = new QStandardItemModel();
     model->setColumnCount(8);
 
@@ -202,7 +202,7 @@ void MainWindow::LoadData()
 
 void MainWindow::SortData()
 {
-    JsonLabel->clear();
+    StatusLabel->clear();
     QStandardItemModel *model = new QStandardItemModel();
     model->setColumnCount(8);
 
@@ -262,14 +262,14 @@ void MainWindow::GenJson()
     dir.cdUp(); //build dir
     dir.cdUp(); //project dir
     QString projectDir = dir.absolutePath();
-    QString JsonPath = projectDir + "/data/GeneratedJson/FlightData.json";
+    QString JsonPath = projectDir + "/data/GeneratedData/FlightData.json";
     // qDebug() << JsonPath;
     QFile jsonFile(JsonPath); //JsonFile save
 
     if (jsonFile.exists())
     {
-        JsonLabel->setText("File already exists: " + JsonPath);
-        JsonLabel->setStyleSheet("font-weight: bold; color: orange;");
+        StatusLabel->setText("File already exists: " + JsonPath);
+        StatusLabel->setStyleSheet("font-weight: bold; color: orange;");
         return;
     }
 
@@ -278,18 +278,126 @@ void MainWindow::GenJson()
         jsonFile.write(jsonString.toUtf8());
         jsonFile.close();
         // qDebug() << "JSON File Saved!!";
-        JsonLabel ->setText("Json file saved succesfully at " + JsonPath);
-        JsonLabel ->setStyleSheet("font-weight: bold; color:green;");
+        StatusLabel ->setText("Json file saved succesfully at " + JsonPath);
+        StatusLabel ->setStyleSheet("font-weight: bold; color:green;");
     }
     else
     {
         // qDebug() << "Failed to save JSON file.";
-        JsonLabel -> setText("Failed to save JSON file");
-        JsonLabel -> setStyleSheet("font-weight:bold; color:red;");
+        StatusLabel -> setText("Failed to save JSON file");
+        StatusLabel -> setStyleSheet("font-weight:bold; color:red;");
     }
 }
 
 void MainWindow::LoadDB()
 {
-    qDebug() << "Load Database button clicked!";
+    DB_Con = QSqlDatabase::addDatabase("QSQLITE");
+
+    QString buildDir = QDir::currentPath(); //cwd
+    // qDebug() << buildDir;
+    QDir dir(buildDir);
+    dir.cdUp(); //build dir
+    dir.cdUp(); //project dir
+    QString projectDir = dir.absolutePath();
+    QString DBPath = projectDir + "/data/GeneratedData/FlightData.db";
+
+    QFile dbFile(DBPath);
+    if (dbFile.exists())
+    {
+        qDebug() << "Database already exists at " << DBPath;
+        StatusLabel->setText("Database already exists at" + DBPath);
+        StatusLabel->setStyleSheet("font-weight: bold; color: orange;");
+
+        DB_Con.setDatabaseName(DBPath);
+        if (!DB_Con.open())
+        {
+            qDebug() << "Error: Failed to open database" << DB_Con.lastError().text();
+            StatusLabel->setText("Failed to open database");
+            StatusLabel->setStyleSheet("font-weight: bold; color: red;");
+            return;
+        }
+        return;
+    }
+
+    DB_Con.setDatabaseName(DBPath);
+
+    if (!DB_Con.open())
+    {
+        qDebug() << "Error: Failed to open database" << DB_Con.lastError().text();
+        StatusLabel->setText("Failed to open database");
+        StatusLabel->setStyleSheet("font-weight: bold; color: red;");
+        return;
+    }
+
+    QSqlQuery query;
+
+    QString createTableQuery = R"(
+        CREATE TABLE IF NOT EXISTS FlightData (
+            RowNo INTEGER PRIMARY KEY AUTOINCREMENT,
+            Time TEXT,
+            Latitude REAL,
+            Longitude REAL,
+            Course INTEGER,
+            Kts INTEGER,
+            Mph INTEGER,
+            Altitude INTEGER,
+            Facility TEXT
+        )
+    )";
+
+    if (!query.exec(createTableQuery))
+    {
+        qDebug() << "Error: Failed to create table" << query.lastError().text();
+        StatusLabel->setText("Failed to create table in database");
+        StatusLabel->setStyleSheet("font-weight: bold; color: red;");
+        return;
+    }
+
+    QSqlQuery insertQuery;
+    insertQuery.prepare("INSERT INTO FlightData (Time, Latitude, Longitude, Course, Kts, Mph, Altitude, Facility) "
+                        "VALUES (:Time, :Latitude, :Longitude, :Course, :Kts, :Mph, :Altitude, :Facility)");
+
+    if (!DB_Con.transaction())
+    {
+        qDebug() << "Error: Failed to begin transaction" << DB_Con.lastError().text();
+        StatusLabel->setText("Failed to begin transaction");
+        StatusLabel->setStyleSheet("font-weight: bold; color: red;");
+        return;
+    }
+
+    int count = 0;
+    for (const auto& flight : sortedData)
+    {
+        insertQuery.bindValue(":Time", flight.Time.toString("hh:mm:ss AP"));
+        insertQuery.bindValue(":Latitude", flight.Latitude);
+        insertQuery.bindValue(":Longitude", flight.Longitude);
+        insertQuery.bindValue(":Course", flight.Course);
+        insertQuery.bindValue(":Kts", flight.kts);
+        insertQuery.bindValue(":Mph", flight.mph);
+        insertQuery.bindValue(":Altitude", flight.AltitudeFeet);
+        insertQuery.bindValue(":Facility", flight.ReportingFacility);
+
+        if (!insertQuery.exec())
+        {
+            qDebug() << "Error: Failed to insert data" << insertQuery.lastError().text();
+            DB_Con.rollback(); // Rollback the transaction if insertion fails
+            StatusLabel->setText("Failed to insert data into database");
+            StatusLabel->setStyleSheet("font-weight: bold; color: red;");
+            return;
+        }
+
+        count++;
+    }
+
+    if (!DB_Con.commit())
+    {
+        qDebug() << "Error: Failed to commit transaction" << DB_Con.lastError().text();
+        StatusLabel->setText("Failed to commit transaction");
+        StatusLabel->setStyleSheet("font-weight: bold; color: red;");
+        return;
+    }
+
+    StatusLabel->setText(QString::number(count) + " rows inserted into the database successfully");
+    StatusLabel->setStyleSheet("font-weight: bold; color: green;");
+
 }
