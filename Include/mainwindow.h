@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include <QTableView>
 #include <QPushButton>
+#include <Qlabel>
 #include <QtCore>
 
 class MainWindow : public QMainWindow
@@ -23,10 +24,12 @@ private slots:
 
 private:
     std::vector<FlightData> data;
+    std::vector<FlightData> sortedData;
     QTableView  *dataView;
     QPushButton *LoadButton;
     QPushButton *SortButton;
     QPushButton *JsonButton;
     QPushButton *DBButton;
+    QLabel      *JsonLabel;
 };
 #endif // MAINWINDOW_H
