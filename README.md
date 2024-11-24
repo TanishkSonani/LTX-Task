@@ -6,14 +6,23 @@ A lightweight and platform-independent application built using **Qt**, designed 
 
 ## Table of Contents
 
-1. [Features](#features)  
-2. [Application Structure](#application-structure)  
+1. [Tasks Assigned](#tasks-assigned)  
+2. [Features](#features)  
+3. [Application Structure](#application-structure)  
    - [FlightData.h](#1-flightdatah)  
    - [MainWindow.h](#2-mainwindowh)  
-3. [Execution Flow](#execution-flow)  
-4. [Key Benefits](#key-benefits)  
-5. [Demo](#demo)  
-6. [How to Run the Application](#how-to-run-the-application)  
+4. [Execution Flow](#execution-flow)  
+5. [Key Benefits](#key-benefits)  
+6. [Demo](#demo)  
+7. [How to Run the Application](#how-to-run-the-application)  
+
+---
+
+## Tasks Assigned
+
+Tasks assigned can be found in the image below:
+
+![Tasks Assigned](https://github.com/user-attachments/assets/d668a464-f9d4-48b7-aa7c-751301b9807e)
 
 ---
 
